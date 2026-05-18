@@ -1,0 +1,917 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GoldScope — MT4リアルタイムゴールド分析</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Mono:wght@300;400&family=Noto+Sans+JP:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --gold: #C9A84C;
+    --gold-light: #E8C97A;
+    --gold-dim: #7A5F28;
+    --gold-glow: rgba(201,168,76,0.12);
+    --bg: #0A0A08;
+    --bg2: #111109;
+    --bg3: #181712;
+    --surface: #1C1B14;
+    --surface2: #232218;
+    --border: rgba(201,168,76,0.15);
+    --border-bright: rgba(201,168,76,0.35);
+    --text: #F0EBD8;
+    --text-muted: #8A8272;
+    --text-dim: #4A4638;
+    --red: #D44;
+    --green: #4A9;
+    --mono: 'DM Mono', monospace;
+    --serif: 'Cormorant Garamond', Georgia, serif;
+    --sans: 'Noto Sans JP', sans-serif;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    font-weight: 300;
+    overflow-x: hidden;
+    line-height: 1.7;
+  }
+
+  /* ── NOISE TEXTURE ── */
+  body::before {
+    content: '';
+    position: fixed; inset: 0; z-index: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+    pointer-events: none;
+    opacity: 0.4;
+  }
+
+  /* ── NAV ── */
+  nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 1.2rem 3rem;
+    border-bottom: 1px solid var(--border);
+    background: rgba(10,10,8,0.85);
+    backdrop-filter: blur(12px);
+  }
+
+  .nav-logo {
+    font-family: var(--serif);
+    font-size: 1.5rem;
+    font-weight: 300;
+    letter-spacing: 0.15em;
+    color: var(--gold);
+  }
+  .nav-logo span { color: var(--text-muted); font-style: italic; font-size: 0.85em; }
+
+  nav a.cta-btn {
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.1em;
+    color: var(--bg);
+    background: var(--gold);
+    border: none;
+    padding: 0.55rem 1.4rem;
+    cursor: pointer;
+    text-decoration: none;
+    transition: background 0.2s, transform 0.15s;
+    display: inline-block;
+  }
+  nav a.cta-btn:hover { background: var(--gold-light); transform: translateY(-1px); }
+
+  /* ── HERO ── */
+  .hero {
+    position: relative;
+    min-height: 100vh;
+    display: flex; align-items: center; justify-content: center;
+    padding: 7rem 2rem 5rem;
+    overflow: hidden;
+  }
+
+  .hero-grid {
+    position: absolute; inset: 0;
+    background-image:
+      linear-gradient(rgba(201,168,76,0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(201,168,76,0.04) 1px, transparent 1px);
+    background-size: 60px 60px;
+  }
+
+  .hero-glow {
+    position: absolute;
+    width: 600px; height: 600px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(201,168,76,0.08) 0%, transparent 70%);
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+  }
+
+  .hero-content {
+    position: relative; z-index: 1;
+    text-align: center;
+    max-width: 860px;
+  }
+
+  .hero-eyebrow {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.25em;
+    color: var(--gold);
+    text-transform: uppercase;
+    margin-bottom: 2rem;
+    opacity: 0;
+    animation: fadeUp 0.8s 0.2s forwards;
+  }
+
+  .hero-title {
+    font-family: var(--serif);
+    font-size: clamp(3.5rem, 8vw, 7rem);
+    font-weight: 300;
+    line-height: 0.95;
+    letter-spacing: -0.01em;
+    color: var(--text);
+    margin-bottom: 0.3em;
+    opacity: 0;
+    animation: fadeUp 0.8s 0.35s forwards;
+  }
+
+  .hero-title em {
+    font-style: italic;
+    color: var(--gold);
+  }
+
+  .hero-sub {
+    font-family: var(--serif);
+    font-size: clamp(1.1rem, 2.5vw, 1.5rem);
+    font-weight: 300;
+    font-style: italic;
+    color: var(--text-muted);
+    margin-bottom: 3rem;
+    opacity: 0;
+    animation: fadeUp 0.8s 0.5s forwards;
+  }
+
+  .hero-price-block {
+    display: inline-flex; align-items: baseline; gap: 0.4rem;
+    margin-bottom: 2.5rem;
+    opacity: 0;
+    animation: fadeUp 0.8s 0.65s forwards;
+  }
+
+  .price-num {
+    font-family: var(--serif);
+    font-size: 3rem;
+    font-weight: 300;
+    color: var(--gold);
+  }
+
+  .price-unit {
+    font-family: var(--mono);
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    letter-spacing: 0.1em;
+  }
+
+  .hero-cta {
+    display: inline-block;
+    font-family: var(--mono);
+    font-size: 0.78rem;
+    letter-spacing: 0.15em;
+    color: var(--bg);
+    background: var(--gold);
+    padding: 1rem 3rem;
+    text-decoration: none;
+    transition: background 0.2s, transform 0.15s, box-shadow 0.2s;
+    opacity: 0;
+    animation: fadeUp 0.8s 0.8s forwards;
+  }
+
+  .hero-cta:hover {
+    background: var(--gold-light);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 32px rgba(201,168,76,0.25);
+  }
+
+  .hero-scroll {
+    position: absolute; bottom: 2.5rem; left: 50%;
+    transform: translateX(-50%);
+    display: flex; flex-direction: column; align-items: center; gap: 0.5rem;
+    font-family: var(--mono); font-size: 0.62rem;
+    letter-spacing: 0.2em; color: var(--text-dim);
+    animation: scrollPulse 2.5s ease-in-out infinite;
+  }
+
+  .hero-scroll::after {
+    content: '';
+    width: 1px; height: 40px;
+    background: linear-gradient(to bottom, var(--gold-dim), transparent);
+  }
+
+  /* ── TICKER ── */
+  .ticker-bar {
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    padding: 0.7rem 0;
+    overflow: hidden;
+    white-space: nowrap;
+  }
+
+  .ticker-inner {
+    display: inline-flex; gap: 4rem;
+    animation: tickerScroll 20s linear infinite;
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.08em;
+  }
+
+  .ticker-item { display: flex; align-items: center; gap: 0.6rem; color: var(--text-muted); }
+  .ticker-item .sym { color: var(--gold); }
+  .ticker-item .up { color: var(--green); }
+  .ticker-item .dn { color: var(--red); }
+
+  /* ── SECTIONS ── */
+  section { position: relative; z-index: 1; }
+
+  .container { max-width: 1100px; margin: 0 auto; padding: 0 2rem; }
+
+  /* ── WHAT IS ── */
+  .what-is {
+    padding: 8rem 2rem;
+  }
+
+  .section-label {
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    letter-spacing: 0.3em;
+    color: var(--gold-dim);
+    text-transform: uppercase;
+    margin-bottom: 1.5rem;
+    display: flex; align-items: center; gap: 1rem;
+  }
+
+  .section-label::before {
+    content: '';
+    display: inline-block;
+    width: 2rem; height: 1px;
+    background: var(--gold-dim);
+  }
+
+  .what-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 5rem;
+    align-items: center;
+    margin-top: 3rem;
+  }
+
+  .what-text h2 {
+    font-family: var(--serif);
+    font-size: clamp(2rem, 4vw, 3.2rem);
+    font-weight: 300;
+    line-height: 1.2;
+    margin-bottom: 1.5rem;
+    color: var(--text);
+  }
+
+  .what-text h2 em { font-style: italic; color: var(--gold); }
+
+  .what-text p {
+    color: var(--text-muted);
+    font-size: 0.95rem;
+    line-height: 1.9;
+    margin-bottom: 1rem;
+  }
+
+  /* ── MOCK DASHBOARD ── */
+  .mock-dashboard {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+    box-shadow: 0 24px 64px rgba(0,0,0,0.6);
+  }
+
+  .mock-topbar {
+    background: var(--surface2);
+    border-bottom: 1px solid var(--border);
+    padding: 0.6rem 1rem;
+    display: flex; align-items: center; gap: 0.5rem;
+  }
+
+  .mock-dot { width: 8px; height: 8px; border-radius: 50%; }
+
+  .mock-title {
+    font-family: var(--mono);
+    font-size: 0.68rem;
+    color: var(--text-muted);
+    letter-spacing: 0.1em;
+    margin-left: auto;
+  }
+
+  .mock-body { padding: 1rem; }
+
+  .mock-price-row {
+    display: flex; align-items: baseline; gap: 0.5rem;
+    margin-bottom: 0.8rem;
+  }
+
+  .mock-price {
+    font-family: var(--mono);
+    font-size: 1.8rem;
+    color: var(--gold);
+    letter-spacing: -0.02em;
+  }
+
+  .mock-change {
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    color: var(--green);
+    padding: 2px 6px;
+    background: rgba(68,170,102,0.12);
+  }
+
+  .mock-chart {
+    width: 100%;
+    height: 100px;
+    margin-bottom: 1rem;
+  }
+
+  .mock-badges {
+    display: flex; gap: 0.4rem; flex-wrap: wrap;
+    margin-bottom: 1rem;
+  }
+
+  .badge {
+    font-family: var(--mono);
+    font-size: 0.62rem;
+    letter-spacing: 0.08em;
+    padding: 3px 8px;
+    border: 1px solid;
+  }
+
+  .badge-bull { border-color: rgba(68,170,102,0.4); color: var(--green); background: rgba(68,170,102,0.06); }
+  .badge-bear { border-color: rgba(221,68,68,0.4); color: var(--red); background: rgba(221,68,68,0.06); }
+  .badge-gold { border-color: var(--border-bright); color: var(--gold); background: var(--gold-glow); }
+  .badge-neu  { border-color: var(--text-dim); color: var(--text-muted); }
+
+  .mock-rows { border-top: 1px solid var(--border); padding-top: 0.8rem; }
+
+  .mock-row {
+    display: flex; justify-content: space-between;
+    font-family: var(--mono);
+    font-size: 0.68rem;
+    color: var(--text-muted);
+    padding: 0.3rem 0;
+    border-bottom: 1px solid rgba(201,168,76,0.05);
+  }
+
+  .mock-row .val { color: var(--text); }
+  .mock-row .val.up { color: var(--green); }
+  .mock-row .val.dn { color: var(--red); }
+
+  /* ── FEATURES ── */
+  .features {
+    padding: 8rem 2rem;
+    background: var(--bg2);
+  }
+
+  .features-header {
+    text-align: center;
+    margin-bottom: 4rem;
+  }
+
+  .features-header h2 {
+    font-family: var(--serif);
+    font-size: clamp(2rem, 4vw, 3rem);
+    font-weight: 300;
+    color: var(--text);
+    margin-top: 1rem;
+  }
+
+  .features-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1px;
+    background: var(--border);
+    border: 1px solid var(--border);
+  }
+
+  .feature-cell {
+    background: var(--bg2);
+    padding: 2.5rem 2rem;
+    transition: background 0.3s;
+  }
+
+  .feature-cell:hover { background: var(--surface); }
+
+  .feature-icon {
+    font-family: var(--mono);
+    font-size: 1.5rem;
+    color: var(--gold);
+    margin-bottom: 1.2rem;
+    display: block;
+  }
+
+  .feature-cell h3 {
+    font-family: var(--serif);
+    font-size: 1.25rem;
+    font-weight: 400;
+    color: var(--text);
+    margin-bottom: 0.8rem;
+    line-height: 1.3;
+  }
+
+  .feature-cell p {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    line-height: 1.8;
+  }
+
+  /* ── TIMEFRAMES ── */
+  .timeframes {
+    padding: 8rem 2rem;
+  }
+
+  .tf-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
+    margin-top: 3rem;
+  }
+
+  .tf-card {
+    border: 1px solid var(--border);
+    background: var(--surface);
+    padding: 2rem;
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.3s, transform 0.3s;
+  }
+
+  .tf-card:hover { border-color: var(--border-bright); transform: translateY(-4px); }
+
+  .tf-card::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, var(--gold) 0%, transparent 100%);
+    opacity: 0; transition: opacity 0.3s;
+  }
+
+  .tf-card:hover::before { opacity: 1; }
+
+  .tf-label {
+    font-family: var(--mono);
+    font-size: 2rem;
+    color: var(--gold);
+    letter-spacing: -0.03em;
+    margin-bottom: 0.5rem;
+  }
+
+  .tf-card h3 {
+    font-family: var(--serif);
+    font-size: 1.1rem;
+    color: var(--text);
+    margin-bottom: 0.8rem;
+  }
+
+  .tf-card p {
+    font-size: 0.82rem;
+    color: var(--text-muted);
+    line-height: 1.8;
+  }
+
+  /* ── PRICING ── */
+  .pricing {
+    padding: 8rem 2rem;
+    background: var(--bg2);
+    text-align: center;
+  }
+
+  .pricing h2 {
+    font-family: var(--serif);
+    font-size: clamp(2rem, 4vw, 3rem);
+    font-weight: 300;
+    color: var(--text);
+    margin: 1rem 0 0.5rem;
+  }
+
+  .pricing-card {
+    max-width: 480px;
+    margin: 3rem auto;
+    border: 1px solid var(--border-bright);
+    background: var(--surface);
+    padding: 3rem;
+    position: relative;
+  }
+
+  .pricing-card::before {
+    content: 'MONTHLY';
+    position: absolute; top: -1px; left: 50%; transform: translateX(-50%);
+    font-family: var(--mono);
+    font-size: 0.62rem;
+    letter-spacing: 0.2em;
+    color: var(--bg);
+    background: var(--gold);
+    padding: 3px 16px;
+  }
+
+  .pricing-amount {
+    font-family: var(--serif);
+    font-size: 4.5rem;
+    font-weight: 300;
+    color: var(--gold);
+    line-height: 1;
+    margin: 1.5rem 0 0.3rem;
+  }
+
+  .pricing-period {
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    letter-spacing: 0.1em;
+    color: var(--text-muted);
+    margin-bottom: 2rem;
+  }
+
+  .pricing-features {
+    list-style: none;
+    margin-bottom: 2.5rem;
+    text-align: left;
+  }
+
+  .pricing-features li {
+    padding: 0.7rem 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 0.88rem;
+    color: var(--text-muted);
+    display: flex; align-items: center; gap: 0.8rem;
+  }
+
+  .pricing-features li::before {
+    content: '✦';
+    color: var(--gold);
+    font-size: 0.6rem;
+    flex-shrink: 0;
+  }
+
+  .pricing-cta {
+    display: block;
+    font-family: var(--mono);
+    font-size: 0.78rem;
+    letter-spacing: 0.15em;
+    color: var(--bg);
+    background: var(--gold);
+    padding: 1rem 2rem;
+    text-decoration: none;
+    text-align: center;
+    transition: background 0.2s, box-shadow 0.2s;
+  }
+
+  .pricing-cta:hover {
+    background: var(--gold-light);
+    box-shadow: 0 8px 32px rgba(201,168,76,0.3);
+  }
+
+  .pricing-note {
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    color: var(--text-dim);
+    letter-spacing: 0.1em;
+    margin-top: 1.5rem;
+  }
+
+  /* ── TECH SPEC ── */
+  .tech {
+    padding: 8rem 2rem;
+  }
+
+  .spec-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 2.5rem;
+    font-family: var(--mono);
+    font-size: 0.78rem;
+  }
+
+  .spec-table tr { border-bottom: 1px solid var(--border); }
+  .spec-table tr:first-child { border-top: 1px solid var(--border); }
+
+  .spec-table td {
+    padding: 1rem 0;
+    vertical-align: top;
+  }
+
+  .spec-table td:first-child {
+    color: var(--text-dim);
+    width: 180px;
+    letter-spacing: 0.1em;
+  }
+
+  .spec-table td:last-child { color: var(--text); }
+
+  /* ── FOOTER ── */
+  footer {
+    border-top: 1px solid var(--border);
+    padding: 3rem 2rem;
+    text-align: center;
+  }
+
+  .footer-logo {
+    font-family: var(--serif);
+    font-size: 1.8rem;
+    font-weight: 300;
+    color: var(--gold);
+    letter-spacing: 0.15em;
+    margin-bottom: 0.5rem;
+  }
+
+  footer p {
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    color: var(--text-dim);
+    letter-spacing: 0.12em;
+    margin-top: 1rem;
+  }
+
+  /* ── ANIMATIONS ── */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(24px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes scrollPulse {
+    0%, 100% { opacity: 0.3; }
+    50% { opacity: 0.8; }
+  }
+
+  @keyframes tickerScroll {
+    0%   { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+  }
+
+  /* ── SCROLL REVEAL ── */
+  .reveal {
+    opacity: 0;
+    transform: translateY(32px);
+    transition: opacity 0.7s ease, transform 0.7s ease;
+  }
+
+  .reveal.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 768px) {
+    nav { padding: 1rem 1.5rem; }
+    .what-grid { grid-template-columns: 1fr; gap: 3rem; }
+    .features-grid { grid-template-columns: 1fr; }
+    .tf-grid { grid-template-columns: 1fr; }
+    .spec-table td:first-child { width: 120px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-logo">GoldScope <span>by MUSIC NEO</span></div>
+  <a href="https://buy.stripe.com/bJebJ2coocN7gnH9d6gA801" class="cta-btn" target="_blank">今すぐ申し込む →</a>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-grid"></div>
+  <div class="hero-glow"></div>
+  <div class="hero-content">
+    <p class="hero-eyebrow">MT4 × XAUUSD リアルタイム分析ツール</p>
+    <h1 class="hero-title">Gold<em>Scope</em></h1>
+    <p class="hero-sub">ゴールドの動きを、三つの時間軸で捉える。</p>
+    <div class="hero-price-block">
+      <span class="price-num">¥12,000</span>
+      <span class="price-unit">/ MONTH</span>
+    </div>
+    <br>
+    <a href="https://buy.stripe.com/bJebJ2coocN7gnH9d6gA801" class="hero-cta" target="_blank">1日無料トライアルを開始する</a>
+  </div>
+  <div class="hero-scroll">SCROLL</div>
+</section>
+
+<!-- TICKER -->
+<div class="ticker-bar">
+  <div class="ticker-inner">
+    <span class="ticker-item"><span class="sym">XAUUSD</span> 2,347.80 <span class="up">▲ +0.42%</span></span>
+    <span class="ticker-item"><span class="sym">15m</span> トレンド: <span class="badge-text up">買い優勢</span></span>
+    <span class="ticker-item"><span class="sym">5m</span> 雲突抜け <span class="up">確認済</span></span>
+    <span class="ticker-item"><span class="sym">1m</span> エントリー待機 <span class="badge-text">叩かれ確認中</span></span>
+    <span class="ticker-item"><span class="sym">MT4</span> HFM 直接接続 <span class="up">●LIVE</span></span>
+    <!-- dup for seamless loop -->
+    <span class="ticker-item"><span class="sym">XAUUSD</span> 2,347.80 <span class="up">▲ +0.42%</span></span>
+    <span class="ticker-item"><span class="sym">15m</span> トレンド: <span class="up">買い優勢</span></span>
+    <span class="ticker-item"><span class="sym">5m</span> 雲突抜け <span class="up">確認済</span></span>
+    <span class="ticker-item"><span class="sym">1m</span> エントリー待機</span>
+    <span class="ticker-item"><span class="sym">MT4</span> HFM 直接接続 <span class="up">●LIVE</span></span>
+  </div>
+</div>
+
+<!-- WHAT IS -->
+<section class="what-is reveal">
+  <div class="container">
+    <div class="what-grid">
+      <div class="what-text">
+        <div class="section-label">WHAT IS GOLDSCOPE</div>
+        <h2>MT4に直接<em>つながる</em><br>ゴールド専用の眼</h2>
+        <p>GoldScopeは、HFM（MT4）とリアルタイムで接続し、XAUUSD（ゴールド）の相場状況を15分・5分・1分の三つの時間軸で自動分析するトレード支援ツールです。</p>
+        <p>一目均衡表をベースにした独自ロジックで「雲突抜け」「叩かれ」「雲の厚み」などの重要シグナルを即座に判定。感覚に頼らず、構造的なエントリー判断をサポートします。</p>
+      </div>
+      <!-- MOCK DASHBOARD -->
+      <div class="mock-dashboard">
+        <div class="mock-topbar">
+          <div class="mock-dot" style="background:#D44;"></div>
+          <div class="mock-dot" style="background:#CA3;"></div>
+          <div class="mock-dot" style="background:#4A9;"></div>
+          <span class="mock-title">GoldScope v2.4 — XAUUSD</span>
+        </div>
+        <div class="mock-body">
+          <div class="mock-price-row">
+            <span class="mock-price">2,347.80</span>
+            <span class="mock-change">▲ +0.42%</span>
+          </div>
+          <svg class="mock-chart" viewBox="0 0 280 100" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient id="cg" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#C9A84C" stop-opacity="0.3"/>
+                <stop offset="100%" stop-color="#C9A84C" stop-opacity="0"/>
+              </linearGradient>
+            </defs>
+            <!-- Ichimoku cloud area -->
+            <path d="M0,55 Q20,50 40,48 Q60,46 80,52 Q100,58 120,50 Q140,42 160,38 Q180,34 200,30 Q220,26 240,22 Q260,18 280,16 L280,70 Q260,72 240,74 Q220,76 200,72 Q180,68 160,64 Q140,60 120,66 Q100,72 80,76 Q60,80 40,78 Q20,76 0,72 Z" fill="rgba(201,168,76,0.06)" stroke="none"/>
+            <!-- Price line -->
+            <polyline points="0,70 30,65 60,68 90,58 120,52 150,44 180,36 210,28 240,20 280,14" fill="none" stroke="#C9A84C" stroke-width="1.5"/>
+            <!-- Signal dots -->
+            <circle cx="90" cy="58" r="3" fill="#D44" opacity="0.8"/>
+            <circle cx="210" cy="28" r="3" fill="#4A9" opacity="0.8"/>
+          </svg>
+          <div class="mock-badges">
+            <span class="badge badge-gold">15m 上昇トレンド</span>
+            <span class="badge badge-bull">雲突抜け ✓</span>
+            <span class="badge badge-bull">転換上位</span>
+            <span class="badge badge-neu">1m 待機中</span>
+          </div>
+          <div class="mock-rows">
+            <div class="mock-row"><span>雲上限</span><span class="val">2,351.20</span></div>
+            <div class="mock-row"><span>転換線</span><span class="val">2,344.80</span></div>
+            <div class="mock-row"><span>基準線</span><span class="val">2,338.50</span></div>
+            <div class="mock-row"><span>叩かれ判定</span><span class="val up">陽線確認</span></div>
+            <div class="mock-row"><span>エントリー</span><span class="val up">LONG 推奨</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section class="features reveal">
+  <div class="container">
+    <div class="features-header">
+      <div class="section-label" style="justify-content:center;">FEATURES</div>
+      <h2>v2.4の主な機能</h2>
+    </div>
+    <div class="features-grid">
+      <div class="feature-cell">
+        <span class="feature-icon">⬡</span>
+        <h3>一目均衡表<br>オートジャッジ</h3>
+        <p>雲突抜け・叩かれ・遅行線クロスを自動判定。3タイムフレームの整合性を一画面で確認できます。</p>
+      </div>
+      <div class="feature-cell">
+        <span class="feature-icon">⊕</span>
+        <h3>MT4 / HFM<br>リアルタイム接続</h3>
+        <p>ブラウザから直接MT4に接続。ティックデータをリアルタイムで取得し、遅延ゼロの判定を実現します。</p>
+      </div>
+      <div class="feature-cell">
+        <span class="feature-icon">◈</span>
+        <h3>マルチエントリー<br>フローシート</h3>
+        <p>叩かれ後のエントリーポイントを段階的に提示。分割エントリーにも対応したチェックリスト表示。</p>
+      </div>
+      <div class="feature-cell">
+        <span class="feature-icon">◎</span>
+        <h3>Discordアラート<br>連携対応</h3>
+        <p>重要シグナル発生時にDiscordへ自動通知。スマートフォンでも即座に状況を把握できます。</p>
+      </div>
+      <div class="feature-cell">
+        <span class="feature-icon">⌖</span>
+        <h3>雲の厚み・<br>強度スコア</h3>
+        <p>現在の雲の厚みをスコア化し、トレンドの信頼性を数値で表示。ノイズの多い相場で特に有効です。</p>
+      </div>
+      <div class="feature-cell">
+        <span class="feature-icon">≋</span>
+        <h3>TP / SL<br>自動計算</h3>
+        <p>直近の均衡表構造からTP・SLを自動提案。リスクリワード比をリアルタイムで表示します。</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- TIMEFRAMES -->
+<section class="timeframes reveal">
+  <div class="container">
+    <div class="section-label">THREE TIMEFRAMES</div>
+    <h2 style="font-family:var(--serif);font-size:clamp(2rem,4vw,3rem);font-weight:300;color:var(--text);margin-top:1rem;margin-bottom:0;">三つの視点で、<em style="font-style:italic;color:var(--gold);">相場を読む</em></h2>
+    <div class="tf-grid">
+      <div class="tf-card">
+        <div class="tf-label">15m</div>
+        <h3>大局トレンド確認</h3>
+        <p>一日の大きな流れを把握。雲の位置と遅行線の状態からトレンドの方向性を確定します。</p>
+      </div>
+      <div class="tf-card">
+        <div class="tf-label">5m</div>
+        <h3>エントリータイミング</h3>
+        <p>雲突抜けと転換線クロスのダブル確認。15mと方向が一致したときだけ点灯するフィルター機能付き。</p>
+      </div>
+      <div class="tf-card">
+        <div class="tf-label">1m</div>
+        <h3>叩かれ精密判定</h3>
+        <p>最小時間軸での「叩かれ」を検知。陽線確定をトリガーにエントリーシグナルを生成します。</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PRICING -->
+<section class="pricing reveal">
+  <div class="container">
+    <div class="section-label" style="justify-content:center;">PRICING</div>
+    <h2>シンプルな<em style="font-style:italic;color:var(--gold);">月額制</em></h2>
+    <div class="pricing-card">
+      <div class="pricing-amount">¥12,000</div>
+      <div class="pricing-period">PER MONTH — 税込</div>
+      <ul class="pricing-features">
+        <li>XAUUSD 専用ダッシュボード</li>
+        <li>MT4 / HFM リアルタイム接続</li>
+        <li>15m / 5m / 1m トリプルスクリーン</li>
+        <li>一目均衡表オートジャッジ</li>
+        <li>Discordアラート連携</li>
+        <li>TP / SL 自動計算</li>
+        <li>マルチエントリーフローシート</li>
+        <li>アップデート無料提供（v2.4〜）</li>
+      </ul>
+      <a href="https://buy.stripe.com/bJebJ2coocN7gnH9d6gA801" class="pricing-cta" target="_blank">Stripeで申し込む → </a>
+      <p class="pricing-note">* 1日間無料トライアルあり　* いつでもキャンセル可能 　* クレジットカード決済</p>
+    </div>
+  </div>
+</section>
+
+<!-- TECH SPEC -->
+<section class="tech reveal">
+  <div class="container">
+    <div class="section-label">TECHNICAL SPEC</div>
+    <h2 style="font-family:var(--serif);font-size:clamp(1.8rem,3.5vw,2.5rem);font-weight:300;color:var(--text);margin-top:1rem;">動作環境</h2>
+    <table class="spec-table">
+      <tr><td>VERSION</td><td>v2.4</td></tr>
+      <tr><td>ブローカー</td><td>HFM（MT4接続対応）</td></tr>
+      <tr><td>対象通貨</td><td>XAUUSD（ゴールド）専用</td></tr>
+      <tr><td>接続方式</td><td>MT4直接接続 / WebSocket</td></tr>
+      <tr><td>対応デバイス</td><td>PC（Chrome / Safari）+ スマートフォン</td></tr>
+      <tr><td>アラート連携</td><td>Discord Webhook</td></tr>
+      <tr><td>ホスティング</td><td>Vercel（goldscope.vercel.app）</td></tr>
+      <tr><td>決済</td><td>Stripe</td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- FOOTER CTA -->
+<section style="padding:8rem 2rem;text-align:center;background:var(--bg2);position:relative;z-index:1;" class="reveal">
+  <p style="font-family:var(--mono);font-size:0.7rem;letter-spacing:0.25em;color:var(--gold-dim);margin-bottom:1.5rem;">GET STARTED TODAY</p>
+  <h2 style="font-family:var(--serif);font-size:clamp(2.5rem,6vw,4.5rem);font-weight:300;color:var(--text);line-height:1.1;margin-bottom:2.5rem;">ゴールドに、<br><em style="font-style:italic;color:var(--gold);">専用の眼を。</em></h2>
+  <a href="https://buy.stripe.com/bJebJ2coocN7gnH9d6gA801" class="hero-cta" style="opacity:1;animation:none;" target="_blank">1日無料 → 月額¥12,000で始める</a>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-logo">GoldScope</div>
+  <p style="color:var(--gold-dim);font-size:0.72rem;letter-spacing:0.05em;margin-bottom:0.3rem;">MUSIC NEO / 株式会社サウンドテラス</p>
+  <p>© 2025 GoldScope. ALL RIGHTS RESERVED.</p>
+</footer>
+
+<script>
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      e.target.classList.add('visible');
+      observer.unobserve(e.target);
+    }
+  });
+}, { threshold: 0.1 });
+
+document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+</script>
+</body>
+</html>
