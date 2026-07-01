@@ -640,6 +640,10 @@
     margin-top: 1rem;
   }
 
+  /* ── GOLD PRICE STATE ── */
+  .gold-up   { color: #16a34a !important; }
+  .gold-down { color: #dc2626 !important; }
+
   /* ── ANIMATIONS ── */
   @keyframes fadeUp {
     from { opacity: 0; transform: translateY(24px); }
@@ -707,13 +711,13 @@
 <!-- TICKER -->
 <div class="ticker-bar">
   <div class="ticker-inner">
-    <span class="ticker-item"><span class="sym">XAUUSD</span> 2,347.80 <span class="up">▲ +0.42%</span></span>
+    <span class="ticker-item"><span class="sym">XAUUSD</span> <span class="gold-price">2,347.80</span> <span class="gold-change">—</span></span>
     <span class="ticker-item"><span class="sym">15m</span> トレンド: <span class="badge-text up">買い優勢</span></span>
     <span class="ticker-item"><span class="sym">5m</span> 雲突抜け <span class="up">確認済</span></span>
     <span class="ticker-item"><span class="sym">1m</span> エントリー待機 <span class="badge-text">叩かれ確認中</span></span>
     <span class="ticker-item"><span class="sym">MT4</span> HFM 直接接続 <span class="up">●LIVE</span></span>
     <!-- dup for seamless loop -->
-    <span class="ticker-item"><span class="sym">XAUUSD</span> 2,347.80 <span class="up">▲ +0.42%</span></span>
+    <span class="ticker-item"><span class="sym">XAUUSD</span> <span class="gold-price">2,347.80</span> <span class="gold-change">—</span></span>
     <span class="ticker-item"><span class="sym">15m</span> トレンド: <span class="up">買い優勢</span></span>
     <span class="ticker-item"><span class="sym">5m</span> 雲突抜け <span class="up">確認済</span></span>
     <span class="ticker-item"><span class="sym">1m</span> エントリー待機</span>
@@ -741,8 +745,8 @@
         </div>
         <div class="mock-body">
           <div class="mock-price-row">
-            <span class="mock-price">2,347.80</span>
-            <span class="mock-change">▲ +0.42%</span>
+            <span class="mock-price gold-price">2,347.80</span>
+            <span class="mock-change gold-change">—</span>
           </div>
           <svg class="mock-chart" viewBox="0 0 280 100" xmlns="http://www.w3.org/2000/svg">
             <defs>
@@ -912,6 +916,71 @@ const observer = new IntersectionObserver(entries => {
 }, { threshold: 0.1 });
 
 document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+</script>
+
+<script>
+(function () {
+  var API_URL = "https://api.gold-api.com/price/XAU";
+  var REFRESH_MS = 15000;
+  var prevPrice = null;
+
+  function fmt(n) {
+    return n.toLocaleString("en-US", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    });
+  }
+
+  function setAll(key, text, colorClass) {
+    var els = [];
+    var byId = document.getElementById("gold-" + key);
+    if (byId) els.push(byId);
+    var byClass = document.querySelectorAll(".gold-" + key);
+    for (var i = 0; i < byClass.length; i++) els.push(byClass[i]);
+    for (var j = 0; j < els.length; j++) {
+      els[j].textContent = text;
+      if (colorClass) {
+        els[j].classList.remove("gold-up", "gold-down", "up", "dn");
+        els[j].classList.add(colorClass);
+      }
+    }
+  }
+
+  function update() {
+    fetch(API_URL, { cache: "no-store" })
+      .then(function (r) {
+        if (!r.ok) throw new Error("HTTP " + r.status);
+        return r.json();
+      })
+      .then(function (data) {
+        var price = data.price;
+        if (typeof price !== "number") throw new Error("no price");
+        setAll("price", fmt(price));
+        if (prevPrice !== null) {
+          var diff = price - prevPrice;
+          var pct = (diff / prevPrice) * 100;
+          var arrow = diff > 0 ? "▲" : (diff < 0 ? "▼" : "—");
+          var sign = diff > 0 ? "+" : "";
+          var colorClass = diff > 0 ? "gold-up" : (diff < 0 ? "gold-down" : null);
+          setAll("change", arrow + " " + sign + pct.toFixed(2) + "%", colorClass);
+        }
+        prevPrice = price;
+        var now = new Date();
+        var hh = String(now.getHours()).padStart(2, "0");
+        var mm = String(now.getMinutes()).padStart(2, "0");
+        var ss = String(now.getSeconds()).padStart(2, "0");
+        setAll("updated", hh + ":" + mm + ":" + ss + " 更新");
+      })
+      .catch(function (e) {
+        setAll("price", "取得中…");
+        setAll("change", "");
+        console.warn("[GoldScope LP] price fetch failed:", e);
+      });
+  }
+
+  update();
+  setInterval(update, REFRESH_MS);
+})();
 </script>
 </body>
 </html>
