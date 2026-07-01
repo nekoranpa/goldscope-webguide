@@ -787,39 +787,86 @@
   <div class="container">
     <div class="features-header">
       <div class="section-label" style="justify-content:center;">FEATURES</div>
-      <h2>勝率を、<em style="font-style:italic;color:var(--gold);">論拠</em>で積み上げる</h2>
+      <h2>方向・エントリー・利確損切りを、<em style="font-style:italic;color:var(--gold);">一画面</em>で</h2>
     </div>
     <div class="features-grid">
       <div class="feature-cell">
         <span class="feature-icon">🧭</span>
         <h3>方向コンパス<br>（ブレない矢印）</h3>
-        <p>20/75/200EMAの位置・傾きと多時間足を1本の矢印に集約。ヒステリシスで小さな上下では動かない“寝返らない味方”。</p>
+        <p>20/75/200EMAの位置・傾きと多時間足（1分〜日足）を1本の矢印に集約。小さな上下では動かない“寝返らない味方”。</p>
       </div>
       <div class="feature-cell">
-        <span class="feature-icon">⑪</span>
-        <h3>11の論拠が<br>揃った時だけ</h3>
-        <p>ADX・押し目・RSI・FVG・200EMA・EMA傾き…多重の根拠が揃った瞬間だけサイン点灯。ダマシを削り落とす。</p>
+        <span class="feature-icon">⬆⬇</span>
+        <h3>エントリーサイン<br>（QQE×順張り）</h3>
+        <p>モメンタム転換(QQE)を、トレンド方向とADX地合いで厳選。順張りのBUY/SELL矢印だけを表示。</p>
       </div>
       <div class="feature-cell">
         <span class="feature-icon">🎯</span>
-        <h3>モンテカルロ<br>到達目標</h3>
-        <p>過去の値動きから「どこまで届くか」を確率で提示。到達確率つきの目標で、TPを勘で置かない。</p>
+        <h3>分割決済で<br>利を伸ばす</h3>
+        <p>近い目標でまず一部利確（勝ちを確定）→ 残りは建値ストップ＋トレーリングで伸ばす。早すぎる利確で伸びを逃さない。</p>
       </div>
       <div class="feature-cell">
         <span class="feature-icon">／</span>
-        <h3>トレンドライン<br>自動＋ブレイク</h3>
-        <p>スイング高値・安値を自動で結び延長。引く手間ゼロ。ラインが割れたら即「⚠ ブレイク」を表示。</p>
+        <h3>トレンドライン<br>両側＋ブレイク</h3>
+        <p>サポート（緑）とレジスタンス（赤）を自動描画。突破/割れをサイン＋アラート＋ブレイク後の目標まで提示。</p>
       </div>
       <div class="feature-cell">
-        <span class="feature-icon">➤</span>
-        <h3>目標追従ナビ<br>（到達で静観）</h3>
-        <p>エントリー地点・目標・損切りを一本のプランで管理。到達したら静観。数字と迷いの垂れ流しをやめる。</p>
+        <span class="feature-icon">―</span>
+        <h3>水平線S/R＋<br>到達目標</h3>
+        <p>直近スイングのサポート／レジスタンスを自動で水平線表示。到達目標の予測レンジも1本で提示。</p>
       </div>
       <div class="feature-cell">
         <span class="feature-icon">📊</span>
-        <h3>バックテスト<br>内蔵</h3>
-        <p>あなたの相場（ゴールド）で勝率・期待値を検証。ライブと同じ計算＝数字で裏切らない。</p>
+        <h3>勝率が<br>リアルタイム表示</h3>
+        <p>各サインの成績（勝ち/試行）を右上テーブルに自動集計。時間足・設定を変えると即更新。自分の相場で最適設定を探せる。</p>
       </div>
+    </div>
+  </div>
+</section>
+
+<!-- SCREENSHOTS（実機スクショを差し込む） -->
+<!--
+  使い方：各 <div class="shot-img">…</div> を、あなたのTradingViewスクショ画像に置き換えてください。
+  例）  <div class="shot-img">[スクショ①]</div>
+   →   <img class="shot-img" src="images/shot1.png" alt="全体像">
+  画像はこのフォルダに images/ を作って入れると管理が楽です。
+-->
+<section class="reveal" style="padding:6rem 2rem;position:relative;z-index:1;">
+  <div class="container">
+    <div class="section-label" style="justify-content:center;">SCREENSHOTS</div>
+    <h2 style="font-family:var(--serif);font-size:clamp(2rem,4vw,3rem);font-weight:300;color:var(--text);text-align:center;margin:1rem 0 3rem;">実際の画面で、<em style="font-style:italic;color:var(--gold);">機能を見る</em></h2>
+    <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:2.5rem;">
+
+      <figure style="margin:0;">
+        <div class="shot-img" style="aspect-ratio:16/10;border:1px solid var(--border-bright);border-radius:4px;background:var(--surface);display:flex;align-items:center;justify-content:center;color:var(--text-dim);font-family:var(--mono);font-size:0.8rem;">[スクショ① 全体像]</div>
+        <figcaption style="margin-top:0.9rem;color:var(--text-muted);font-size:0.85rem;line-height:1.7;"><strong style="color:var(--gold);">全体像</strong> — 方向コンパス・BUY/SELLサイン・利確○が一画面に。ゴールド5分足の実例。</figcaption>
+      </figure>
+
+      <figure style="margin:0;">
+        <div class="shot-img" style="aspect-ratio:16/10;border:1px solid var(--border-bright);border-radius:4px;background:var(--surface);display:flex;align-items:center;justify-content:center;color:var(--text-dim);font-family:var(--mono);font-size:0.8rem;">[スクショ② 方向コンパス]</div>
+        <figcaption style="margin-top:0.9rem;color:var(--text-muted);font-size:0.85rem;line-height:1.7;"><strong style="color:var(--gold);">方向コンパス</strong> — 方向・強さ%・論拠・多時間足・勝率を右上テーブルに集約。</figcaption>
+      </figure>
+
+      <figure style="margin:0;">
+        <div class="shot-img" style="aspect-ratio:16/10;border:1px solid var(--border-bright);border-radius:4px;background:var(--surface);display:flex;align-items:center;justify-content:center;color:var(--text-dim);font-family:var(--mono);font-size:0.8rem;">[スクショ③ 分割決済]</div>
+        <figcaption style="margin-top:0.9rem;color:var(--text-muted);font-size:0.85rem;line-height:1.7;"><strong style="color:var(--gold);">分割決済で伸ばす</strong> — 一部利確○ → 残りを伸ばし◇。早すぎる利確で伸びを逃さない。</figcaption>
+      </figure>
+
+      <figure style="margin:0;">
+        <div class="shot-img" style="aspect-ratio:16/10;border:1px solid var(--border-bright);border-radius:4px;background:var(--surface);display:flex;align-items:center;justify-content:center;color:var(--text-dim);font-family:var(--mono);font-size:0.8rem;">[スクショ④ トレンドライン]</div>
+        <figcaption style="margin-top:0.9rem;color:var(--text-muted);font-size:0.85rem;line-height:1.7;"><strong style="color:var(--gold);">両側トレンドライン</strong> — サポート/レジスタンスの自動チャネル＋ブレイク目標。</figcaption>
+      </figure>
+
+      <figure style="margin:0;">
+        <div class="shot-img" style="aspect-ratio:16/10;border:1px solid var(--border-bright);border-radius:4px;background:var(--surface);display:flex;align-items:center;justify-content:center;color:var(--text-dim);font-family:var(--mono);font-size:0.8rem;">[スクショ⑤ エントリー/利確/損切]</div>
+        <figcaption style="margin-top:0.9rem;color:var(--text-muted);font-size:0.85rem;line-height:1.7;"><strong style="color:var(--gold);">明確な3表示</strong> — 買い/売りエントリー・利確目標・損切りを右端に分けて表示。</figcaption>
+      </figure>
+
+      <figure style="margin:0;">
+        <div class="shot-img" style="aspect-ratio:16/10;border:1px solid var(--border-bright);border-radius:4px;background:var(--surface);display:flex;align-items:center;justify-content:center;color:var(--text-dim);font-family:var(--mono);font-size:0.8rem;">[スクショ⑥ 勝率]</div>
+        <figcaption style="margin-top:0.9rem;color:var(--text-muted);font-size:0.85rem;line-height:1.7;"><strong style="color:var(--gold);">勝率が見える</strong> — 各サインの成績をリアルタイム集計。自分の相場で最適設定を検証。</figcaption>
+      </figure>
+
     </div>
   </div>
 </section>
